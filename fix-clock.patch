@@ -1,0 +1,1888 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 016e743..49305d3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -13,20 +13,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
+ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+ 
+ # Check C++11 or C++0x support
+-include(CheckCXXCompilerFlag)
+-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+-if(COMPILER_SUPPORTS_CXX11)
+-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+-   add_definitions(-DCOMPILEDWITHC11)
+-   message(STATUS "Using flag -std=c++11.")
+-elseif(COMPILER_SUPPORTS_CXX0X)
+-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+-   add_definitions(-DCOMPILEDWITHC0X)
+-   message(STATUS "Using flag -std=c++0x.")
+-else()
+-   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+-endif()
++set(CMAKE_CXX_STANDARD 14)
+ 
+ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+ 
+diff --git a/Examples/Monocular-Inertial/mono_inertial_euroc.cc b/Examples/Monocular-Inertial/mono_inertial_euroc.cc
+index b9f320f..ab951da 100644
+--- a/Examples/Monocular-Inertial/mono_inertial_euroc.cc
++++ b/Examples/Monocular-Inertial/mono_inertial_euroc.cc
+@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc b/Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc
+index c8bf1ff..885bf40 100644
+--- a/Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc
++++ b/Examples/Monocular-Inertial/mono_inertial_realsense_D435i.cc
+@@ -317,7 +317,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -368,7 +368,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -378,7 +378,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -389,7 +389,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -398,7 +398,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc b/Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc
+index b4575b6..7748425 100644
+--- a/Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc
++++ b/Examples/Monocular-Inertial/mono_inertial_realsense_t265.cc
+@@ -233,7 +233,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -260,7 +260,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #endif
+     #endif
+                 int width = imCV.cols * imageScale;
+@@ -270,7 +270,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -311,7 +311,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+ #endif
+         // Pass the image to the SLAM system
+         SLAM.TrackMonocular(im, timestamp, vImuMeas);
+@@ -319,7 +319,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular-Inertial/mono_inertial_tum_vi.cc b/Examples/Monocular-Inertial/mono_inertial_tum_vi.cc
+index bd84ce0..ca1874b 100644
+--- a/Examples/Monocular-Inertial/mono_inertial_tum_vi.cc
++++ b/Examples/Monocular-Inertial/mono_inertial_tum_vi.cc
+@@ -175,7 +175,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -185,7 +185,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -198,7 +198,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -208,7 +208,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular/mono_euroc.cc b/Examples/Monocular/mono_euroc.cc
+index 3a23312..363939b 100644
+--- a/Examples/Monocular/mono_euroc.cc
++++ b/Examples/Monocular/mono_euroc.cc
+@@ -112,7 +112,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -122,7 +122,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -132,7 +132,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -142,7 +142,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular/mono_kitti.cc b/Examples/Monocular/mono_kitti.cc
+index 404c824..ab5cde9 100644
+--- a/Examples/Monocular/mono_kitti.cc
++++ b/Examples/Monocular/mono_kitti.cc
+@@ -81,7 +81,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -91,7 +91,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -101,7 +101,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -110,7 +110,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular/mono_realsense_D435i.cc b/Examples/Monocular/mono_realsense_D435i.cc
+index 11cbc03..12ea68e 100644
+--- a/Examples/Monocular/mono_realsense_D435i.cc
++++ b/Examples/Monocular/mono_realsense_D435i.cc
+@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Monocular/mono_realsense_t265.cc b/Examples/Monocular/mono_realsense_t265.cc
+index 9895eef..d8a6767 100644
+--- a/Examples/Monocular/mono_realsense_t265.cc
++++ b/Examples/Monocular/mono_realsense_t265.cc
+@@ -119,7 +119,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imCV.cols * imageScale;
+@@ -129,7 +129,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -144,7 +144,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+@@ -155,7 +155,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #endif
+             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+             SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Monocular/mono_tum.cc b/Examples/Monocular/mono_tum.cc
+index 0e7d922..2d627c1 100644
+--- a/Examples/Monocular/mono_tum.cc
++++ b/Examples/Monocular/mono_tum.cc
+@@ -82,7 +82,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -92,7 +92,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -102,7 +102,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -111,7 +111,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Monocular/mono_tum_vi.cc b/Examples/Monocular/mono_tum_vi.cc
+index 2805c92..31df34c 100644
+--- a/Examples/Monocular/mono_tum_vi.cc
++++ b/Examples/Monocular/mono_tum_vi.cc
+@@ -115,7 +115,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -125,7 +125,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -148,7 +148,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+             // Pass the image to the SLAM system
+@@ -157,7 +157,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc b/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
+index 03970c5..0117656 100644
+--- a/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
++++ b/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
+@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             fs = fsSLAM;
+@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -427,7 +427,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -438,7 +438,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/RGB-D/rgbd_realsense_D435i.cc b/Examples/RGB-D/rgbd_realsense_D435i.cc
+index 8ff6131..c992603 100644
+--- a/Examples/RGB-D/rgbd_realsense_D435i.cc
++++ b/Examples/RGB-D/rgbd_realsense_D435i.cc
+@@ -326,7 +326,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             fs = fsSLAM;
+@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -374,7 +374,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -395,7 +395,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/RGB-D/rgbd_tum.cc b/Examples/RGB-D/rgbd_tum.cc
+index d420da5..159c045 100644
+--- a/Examples/RGB-D/rgbd_tum.cc
++++ b/Examples/RGB-D/rgbd_tum.cc
+@@ -97,7 +97,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -106,7 +106,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+diff --git a/Examples/Stereo-Inertial/stereo_inertial_euroc.cc b/Examples/Stereo-Inertial/stereo_inertial_euroc.cc
+index bb52223..00b236b 100644
+--- a/Examples/Stereo-Inertial/stereo_inertial_euroc.cc
++++ b/Examples/Stereo-Inertial/stereo_inertial_euroc.cc
+@@ -178,7 +178,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the images to the SLAM system
+@@ -187,7 +187,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i.cc b/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
+index d3a03bf..d7fd8e8 100644
+--- a/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
++++ b/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
+@@ -347,7 +347,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -399,7 +399,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -411,7 +411,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -431,7 +431,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Stereo-Inertial/stereo_inertial_realsense_t265.cc b/Examples/Stereo-Inertial/stereo_inertial_realsense_t265.cc
+index 9fcd775..7a4d3ac 100644
+--- a/Examples/Stereo-Inertial/stereo_inertial_realsense_t265.cc
++++ b/Examples/Stereo-Inertial/stereo_inertial_realsense_t265.cc
+@@ -246,7 +246,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #endif
+     #endif
+                 int width = imCV.cols * imageScale;
+@@ -257,7 +257,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -297,7 +297,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -306,7 +306,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc b/Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc
+index 2abe614..3fcb2f9 100644
+--- a/Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc
++++ b/Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc
+@@ -147,7 +147,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -158,7 +158,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -204,7 +204,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -213,7 +213,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Stereo/stereo_euroc.cc b/Examples/Stereo/stereo_euroc.cc
+index 1250f2e..aec2824 100644
+--- a/Examples/Stereo/stereo_euroc.cc
++++ b/Examples/Stereo/stereo_euroc.cc
+@@ -125,7 +125,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the images to the SLAM system
+@@ -134,7 +134,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Stereo/stereo_kitti.cc b/Examples/Stereo/stereo_kitti.cc
+index fdc8ef0..2f82038 100644
+--- a/Examples/Stereo/stereo_kitti.cc
++++ b/Examples/Stereo/stereo_kitti.cc
+@@ -84,7 +84,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = imLeft.cols * imageScale;
+@@ -95,7 +95,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -105,7 +105,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the images to the SLAM system
+@@ -114,7 +114,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples/Stereo/stereo_realsense_D435i.cc b/Examples/Stereo/stereo_realsense_D435i.cc
+index f1a4571..f61e057 100644
+--- a/Examples/Stereo/stereo_realsense_D435i.cc
++++ b/Examples/Stereo/stereo_realsense_D435i.cc
+@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples/Stereo/stereo_realsense_t265.cc b/Examples/Stereo/stereo_realsense_t265.cc
+index f96d80a..b2824bf 100644
+--- a/Examples/Stereo/stereo_realsense_t265.cc
++++ b/Examples/Stereo/stereo_realsense_t265.cc
+@@ -129,7 +129,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -140,7 +140,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -154,7 +154,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+@@ -165,7 +165,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+diff --git a/Examples/Stereo/stereo_tum_vi.cc b/Examples/Stereo/stereo_tum_vi.cc
+index 20a3ecf..a1d360f 100644
+--- a/Examples/Stereo/stereo_tum_vi.cc
++++ b/Examples/Stereo/stereo_tum_vi.cc
+@@ -120,7 +120,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -131,7 +131,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -154,7 +154,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -163,7 +163,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular-Inertial/mono_inertial_euroc.cc b/Examples_old/Monocular-Inertial/mono_inertial_euroc.cc
+index ea1dceb..a8446a3 100644
+--- a/Examples_old/Monocular-Inertial/mono_inertial_euroc.cc
++++ b/Examples_old/Monocular-Inertial/mono_inertial_euroc.cc
+@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular-Inertial/mono_inertial_realsense_D435i.cc b/Examples_old/Monocular-Inertial/mono_inertial_realsense_D435i.cc
+index c8bf1ff..885bf40 100644
+--- a/Examples_old/Monocular-Inertial/mono_inertial_realsense_D435i.cc
++++ b/Examples_old/Monocular-Inertial/mono_inertial_realsense_D435i.cc
+@@ -317,7 +317,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -368,7 +368,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -378,7 +378,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -389,7 +389,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -398,7 +398,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Monocular-Inertial/mono_inertial_realsense_t265.cc b/Examples_old/Monocular-Inertial/mono_inertial_realsense_t265.cc
+index b4575b6..7748425 100644
+--- a/Examples_old/Monocular-Inertial/mono_inertial_realsense_t265.cc
++++ b/Examples_old/Monocular-Inertial/mono_inertial_realsense_t265.cc
+@@ -233,7 +233,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -260,7 +260,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #endif
+     #endif
+                 int width = imCV.cols * imageScale;
+@@ -270,7 +270,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -311,7 +311,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+ #endif
+         // Pass the image to the SLAM system
+         SLAM.TrackMonocular(im, timestamp, vImuMeas);
+@@ -319,7 +319,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cc b/Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cc
+index bd84ce0..ca1874b 100644
+--- a/Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cc
++++ b/Examples_old/Monocular-Inertial/mono_inertial_tum_vi.cc
+@@ -175,7 +175,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -185,7 +185,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -198,7 +198,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -208,7 +208,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular/mono_euroc.cc b/Examples_old/Monocular/mono_euroc.cc
+index 3a23312..363939b 100644
+--- a/Examples_old/Monocular/mono_euroc.cc
++++ b/Examples_old/Monocular/mono_euroc.cc
+@@ -112,7 +112,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -122,7 +122,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -132,7 +132,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -142,7 +142,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular/mono_kitti.cc b/Examples_old/Monocular/mono_kitti.cc
+index 404c824..ab5cde9 100644
+--- a/Examples_old/Monocular/mono_kitti.cc
++++ b/Examples_old/Monocular/mono_kitti.cc
+@@ -81,7 +81,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -91,7 +91,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -101,7 +101,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -110,7 +110,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular/mono_realsense_D435i.cc b/Examples_old/Monocular/mono_realsense_D435i.cc
+index 11cbc03..12ea68e 100644
+--- a/Examples_old/Monocular/mono_realsense_D435i.cc
++++ b/Examples_old/Monocular/mono_realsense_D435i.cc
+@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -250,7 +250,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Monocular/mono_realsense_t265.cc b/Examples_old/Monocular/mono_realsense_t265.cc
+index 9895eef..d8a6767 100644
+--- a/Examples_old/Monocular/mono_realsense_t265.cc
++++ b/Examples_old/Monocular/mono_realsense_t265.cc
+@@ -119,7 +119,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imCV.cols * imageScale;
+@@ -129,7 +129,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -144,7 +144,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+@@ -155,7 +155,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #endif
+             t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t2 - t1).count();
+             SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Monocular/mono_tum.cc b/Examples_old/Monocular/mono_tum.cc
+index 0e7d922..2d627c1 100644
+--- a/Examples_old/Monocular/mono_tum.cc
++++ b/Examples_old/Monocular/mono_tum.cc
+@@ -82,7 +82,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -92,7 +92,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -102,7 +102,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -111,7 +111,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Monocular/mono_tum_vi.cc b/Examples_old/Monocular/mono_tum_vi.cc
+index 2805c92..31df34c 100644
+--- a/Examples_old/Monocular/mono_tum_vi.cc
++++ b/Examples_old/Monocular/mono_tum_vi.cc
+@@ -115,7 +115,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = im.cols * imageScale;
+@@ -125,7 +125,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -148,7 +148,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+             // Pass the image to the SLAM system
+@@ -157,7 +157,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc b/Examples_old/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
+index 03970c5..0117656 100644
+--- a/Examples_old/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
++++ b/Examples_old/RGB-D-Inertial/rgbd_inertial_realsense_D435i.cc
+@@ -348,7 +348,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             fs = fsSLAM;
+@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -427,7 +427,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -438,7 +438,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/RGB-D/rgbd_realsense_D435i.cc b/Examples_old/RGB-D/rgbd_realsense_D435i.cc
+index 8ff6131..c992603 100644
+--- a/Examples_old/RGB-D/rgbd_realsense_D435i.cc
++++ b/Examples_old/RGB-D/rgbd_realsense_D435i.cc
+@@ -326,7 +326,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             fs = fsSLAM;
+@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -374,7 +374,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -385,7 +385,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -395,7 +395,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/RGB-D/rgbd_tum.cc b/Examples_old/RGB-D/rgbd_tum.cc
+index d420da5..159c045 100644
+--- a/Examples_old/RGB-D/rgbd_tum.cc
++++ b/Examples_old/RGB-D/rgbd_tum.cc
+@@ -97,7 +97,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the image to the SLAM system
+@@ -106,7 +106,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+diff --git a/Examples_old/Stereo-Inertial/stereo_inertial_euroc.cc b/Examples_old/Stereo-Inertial/stereo_inertial_euroc.cc
+index 25dbf3c..1ebf48c 100644
+--- a/Examples_old/Stereo-Inertial/stereo_inertial_euroc.cc
++++ b/Examples_old/Stereo-Inertial/stereo_inertial_euroc.cc
+@@ -197,7 +197,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Rect = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Rect = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Rect = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             cv::remap(imLeft,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+@@ -207,7 +207,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Rect = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Rect = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Rect = std::chrono::steady_clock::now();
+     #endif
+             t_rect = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Rect - t_Start_Rect).count();
+             SLAM.InsertRectTime(t_rect);
+@@ -220,7 +220,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeftRect.cols * imageScale;
+@@ -231,7 +231,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -255,7 +255,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the images to the SLAM system
+@@ -264,7 +264,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc b/Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
+index d3a03bf..d7fd8e8 100644
+--- a/Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
++++ b/Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc
+@@ -347,7 +347,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -399,7 +399,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -411,7 +411,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -431,7 +431,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cc b/Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cc
+index 9fcd775..7a4d3ac 100644
+--- a/Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cc
++++ b/Examples_old/Stereo-Inertial/stereo_inertial_realsense_t265.cc
+@@ -246,7 +246,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+         #endif
+     #endif
+                 int width = imCV.cols * imageScale;
+@@ -257,7 +257,7 @@ int main(int argc, char **argv)
+         #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+         #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -297,7 +297,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Pass the image to the SLAM system
+@@ -306,7 +306,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cc b/Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cc
+index 2abe614..3fcb2f9 100644
+--- a/Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cc
++++ b/Examples_old/Stereo-Inertial/stereo_inertial_tum_vi.cc
+@@ -147,7 +147,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -158,7 +158,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -204,7 +204,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -213,7 +213,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Stereo/stereo_euroc.cc b/Examples_old/Stereo/stereo_euroc.cc
+index 08a59e4..562f447 100644
+--- a/Examples_old/Stereo/stereo_euroc.cc
++++ b/Examples_old/Stereo/stereo_euroc.cc
+@@ -163,7 +163,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Rect = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Rect = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Rect = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             cv::remap(imLeft,imLeftRect,M1l,M2l,cv::INTER_LINEAR);
+@@ -173,7 +173,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Rect = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Rect = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Rect = std::chrono::steady_clock::now();
+     #endif
+             t_rect = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Rect - t_Start_Rect).count();
+             SLAM.InsertRectTime(t_rect);
+@@ -186,7 +186,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeftRect.cols * imageScale;
+@@ -197,7 +197,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -207,7 +207,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the images to the SLAM system
+@@ -216,7 +216,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Stereo/stereo_kitti.cc b/Examples_old/Stereo/stereo_kitti.cc
+index fdc8ef0..2f82038 100644
+--- a/Examples_old/Stereo/stereo_kitti.cc
++++ b/Examples_old/Stereo/stereo_kitti.cc
+@@ -84,7 +84,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = imLeft.cols * imageScale;
+@@ -95,7 +95,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -105,7 +105,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+ #endif
+ 
+         // Pass the images to the SLAM system
+@@ -114,7 +114,7 @@ int main(int argc, char **argv)
+ #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #else
+-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+ #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/Examples_old/Stereo/stereo_realsense_D435i.cc b/Examples_old/Stereo/stereo_realsense_D435i.cc
+index f1a4571..f61e057 100644
+--- a/Examples_old/Stereo/stereo_realsense_D435i.cc
++++ b/Examples_old/Stereo/stereo_realsense_D435i.cc
+@@ -262,7 +262,7 @@ int main(int argc, char **argv) {
+ #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #else
+-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+ #endif
+ 
+             if(count_im_buffer>1)
+@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+             int width = im.cols * imageScale;
+@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+             t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+             SLAM.InsertResizeTime(t_resize);
+@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+     #endif
+ #endif
+         // Stereo images are already rectified.
+@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
+     #ifdef COMPILEDWITHC11
+         std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #else
+-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
++        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+     #endif
+         t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+         SLAM.InsertTrackTime(t_track);
+diff --git a/Examples_old/Stereo/stereo_realsense_t265.cc b/Examples_old/Stereo/stereo_realsense_t265.cc
+index f96d80a..b2824bf 100644
+--- a/Examples_old/Stereo/stereo_realsense_t265.cc
++++ b/Examples_old/Stereo/stereo_realsense_t265.cc
+@@ -129,7 +129,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -140,7 +140,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -154,7 +154,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+@@ -165,7 +165,7 @@ int main(int argc, char **argv)
+   #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+   #endif
+ #endif
+ 
+diff --git a/Examples_old/Stereo/stereo_tum_vi.cc b/Examples_old/Stereo/stereo_tum_vi.cc
+index 3e296f6..4718bcd 100644
+--- a/Examples_old/Stereo/stereo_tum_vi.cc
++++ b/Examples_old/Stereo/stereo_tum_vi.cc
+@@ -121,7 +121,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+     #endif
+ #endif
+                 int width = imLeft.cols * imageScale;
+@@ -132,7 +132,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+                 std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #else
+-                std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
++                std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+     #endif
+                 t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+                 SLAM.InsertResizeTime(t_resize);
+@@ -155,7 +155,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+     #endif
+ 
+             // Pass the image to the SLAM system
+@@ -164,7 +164,7 @@ int main(int argc, char **argv)
+     #ifdef COMPILEDWITHC11
+             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #else
+-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
++            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+     #endif
+ 
+ #ifdef REGISTER_TIMES
+diff --git a/src/LoopClosing.cc b/src/LoopClosing.cc
+index 319afb5..54828ae 100644
+--- a/src/LoopClosing.cc
++++ b/src/LoopClosing.cc
+@@ -89,6 +89,7 @@ void LoopClosing::SetLocalMapper(LocalMapping *pLocalMapper)
+ 
+ void LoopClosing::Run()
+ {
++    return;
+     mbFinished =false;
+ 
+     while(1)
