@@ -16,6 +16,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(ORB_SLAM3 REQUIRED)
@@ -30,13 +32,13 @@ add_executable(stereo-inertial
   src/stereo-inertial/stereo-inertial.cpp
   src/stereo-inertial/stereo-inertial-node.cpp
 )
-ament_target_dependencies(stereo-inertial rclcpp sensor_msgs cv_bridge ORB_SLAM3 Pangolin)
+ament_target_dependencies(stereo-inertial rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin tf2_ros)
 
 install(TARGETS stereo-inertial
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
-install(DIRECTORY launch config
+install(DIRECTORY launch config rviz
   DESTINATION share/${PROJECT_NAME}/)
 
 install(FILES ${ORB_SLAM3_ROOT_DIR}/Vocabulary/ORBvoc.txt.tar.gz

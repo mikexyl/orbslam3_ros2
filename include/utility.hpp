@@ -3,12 +3,10 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-class Utility
-{
+class Utility {
 public:
-  static double StampToSec(builtin_interfaces::msg::Time stamp)
-  {
-    double seconds = stamp.sec + (stamp.nanosec * pow(10,-9));
+  static double StampToSec(builtin_interfaces::msg::Time stamp) {
+    double seconds = stamp.sec + (stamp.nanosec * pow(10, -9));
     return seconds;
   }
 };

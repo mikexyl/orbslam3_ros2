@@ -21,7 +21,8 @@ def launch_setup(context, *args, **kwargs):
       ('camera/left', '/cam0/image_raw'),
       ('camera/right', '/cam1/image_raw'),
       ('imu', '/imu0'),
-    ]
+    ],
+    # prefix='xterm -e gdb -ex run --args',
   )
 
   bag_player=ExecuteProcess(
@@ -29,7 +30,15 @@ def launch_setup(context, *args, **kwargs):
     output='screen',
   )
 
-  return [orb_slam3_node, bag_player]
+  rviz=Node(
+    package='rviz2',
+    executable='rviz2',
+    name='rviz2',
+    output='screen',
+    arguments=['-d', get_package_share_directory('orbslam3_ros2') + '/rviz/stereo_inertial.rviz']
+  )
+
+  return [orb_slam3_node, bag_player, rviz]
 
 
 def generate_launch_description():
