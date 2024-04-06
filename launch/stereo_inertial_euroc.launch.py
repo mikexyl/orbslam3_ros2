@@ -26,7 +26,7 @@ def launch_setup(context, *args, **kwargs):
   )
 
   bag_player=ExecuteProcess(
-    cmd=['ros2', 'bag', 'play', LaunchConfiguration("bag_file"), '--clock'],
+    cmd=['ros2', 'bag', 'play', LaunchConfiguration("bag_file"), '--clock', '-r', '0.2', '--loop'],
     output='screen',
   )
 

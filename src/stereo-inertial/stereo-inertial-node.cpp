@@ -239,8 +239,20 @@ void StereoInertialNode::SyncWithImu() {
       }
 
       // TODO: let's assume it's left camera pose
-      auto T_odom_camera_optical =
-          SLAM_->TrackStereo(imLeft, imRight, tImLeft, vImuMeas);
+      Sophus::SE3f Twc_optical =
+          SLAM_->TrackStereo(imLeft, imRight, tImLeft, vImuMeas).inverse();
+
+      Eigen::Matrix3f R_color_color_optical;
+      R_color_color_optical << 0, 0, 1, -1, 0, 0, 0, -1, 0;
+
+      Sophus::SE3f Twc =
+          Twc_optical * Sophus::SE3f(R_color_color_optical.inverse(),
+                                     Eigen::Vector3f(0, 0, 0));
+
+      // only publish when the system is "OK"
+      auto status = SLAM_->GetTrackingState();
+      if (status != ORB_SLAM3::Tracking::eTrackingState::OK)
+        continue;
 
       sensor_msgs::msg::PointCloud2::SharedPtr landmark_cloud_msg(
           new sensor_msgs::msg::PointCloud2);
@@ -278,14 +290,18 @@ void StereoInertialNode::SyncWithImu() {
       sensor_msgs::PointCloud2Iterator<uint32_t> keypoint_id_it(
           *landmark_cloud_msg, "keypoint_id");
 
+      std::set<long unsigned int> landmark_ids;
+
       // descriptor as image
       cv::Mat desc(landmarks.size(), 32, CV_8UC1);
       size_t nGoodLandmarks = 0;
 
       for (size_t i = 0; i < landmarks.size(); i++) {
         auto const &landmark = landmarks[i];
-        if (landmark == nullptr or landmark->isBad())
+        if (landmark == nullptr or landmark->isBad() or
+            landmark_ids.count(landmark->mnId))
           continue;
+        landmark_ids.insert(landmark->mnId);
         *x_it = landmark->GetWorldPos().x();
         *y_it = landmark->GetWorldPos().y();
         *z_it = landmark->GetWorldPos().z();
@@ -296,7 +312,11 @@ void StereoInertialNode::SyncWithImu() {
         *v_it = -1;
         *keypoint_id_it = nGoodLandmarks;
 
-        memcpy(desc.ptr(nGoodLandmarks), landmark->GetDescriptor().data, 32);
+        // copy to row nGoodLandmarks
+        memcpy(desc.ptr<uchar>(nGoodLandmarks), landmark->GetDescriptor().data,
+               32);
+        nGoodLandmarks++;
+
         ++x_it;
         ++y_it;
         ++z_it;
@@ -306,6 +326,8 @@ void StereoInertialNode::SyncWithImu() {
         ++v_it;
         ++keypoint_id_it;
       }
+
+      modifier.resize(nGoodLandmarks);
 
       // resize the descriptor image
       cv::Mat valid_desc_image = desc.rowRange(0, nGoodLandmarks);
@@ -345,36 +367,25 @@ void StereoInertialNode::SyncWithImu() {
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = tImLeftRos;
       odom_msg.header.frame_id = "odom";
-      odom_msg.child_frame_id = "camera";
-      odom_msg.pose.pose.position.x = T_odom_camera_optical.translation().x();
-      odom_msg.pose.pose.position.y = T_odom_camera_optical.translation().y();
-      odom_msg.pose.pose.position.z = T_odom_camera_optical.translation().z();
+      odom_msg.child_frame_id = "cam0";
+      odom_msg.pose.pose.position.x = Twc.translation().x();
+      odom_msg.pose.pose.position.y = Twc.translation().y();
+      odom_msg.pose.pose.position.z = Twc.translation().z();
 
-      odom_msg.pose.pose.orientation.x =
-          T_odom_camera_optical.unit_quaternion().x();
-      odom_msg.pose.pose.orientation.y =
-          T_odom_camera_optical.unit_quaternion().y();
-      odom_msg.pose.pose.orientation.z =
-          T_odom_camera_optical.unit_quaternion().z();
-      odom_msg.pose.pose.orientation.w =
-          T_odom_camera_optical.unit_quaternion().w();
+      odom_msg.pose.pose.orientation.x = Twc.unit_quaternion().x();
+      odom_msg.pose.pose.orientation.y = Twc.unit_quaternion().y();
+      odom_msg.pose.pose.orientation.z = Twc.unit_quaternion().z();
+      odom_msg.pose.pose.orientation.w = Twc.unit_quaternion().w();
 
       pubOdom_->publish(odom_msg);
 
       geometry_msgs::msg::TransformStamped T_odom_camera_tf;
       T_odom_camera_tf.header.stamp = tImLeftRos;
       T_odom_camera_tf.header.frame_id = "odom";
-      T_odom_camera_tf.child_frame_id = "camera";
-      T_odom_camera_tf.transform = se3ToTF(T_odom_camera_optical);
+      T_odom_camera_tf.child_frame_id = "cam0";
+      T_odom_camera_tf.transform = se3ToTF(Twc);
 
       tfBroadcaster_.sendTransform(T_odom_camera_tf);
-
-      // geometry_msgs::msg::TransformStamped T_baselink_camera_tf;
-      // T_baselink_camera_tf.header.stamp = tImLeftRos;
-      // T_baselink_camera_tf.header.frame_id = "baselink";
-      // T_baselink_camera_tf.child_frame_id = "camera";
-      // T_baselink_camera_tf.transform = se3ToTF(T_baselink_camera_);
-      // staticBroadcaster_.sendTransform(T_baselink_camera_tf);
 
       std::chrono::milliseconds tSleep(1);
       std::this_thread::sleep_for(tSleep);
