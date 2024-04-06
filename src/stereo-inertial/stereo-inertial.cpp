@@ -29,6 +29,8 @@ int main(int argc, char **argv) {
   // process frames.
 
   bool visualization = true;
+  std::stringstream ss_vis(argv[5]);
+  ss_vis >> std::boolalpha >> visualization;
   ORB_SLAM3::System pSLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_STEREO,
                           visualization);
 

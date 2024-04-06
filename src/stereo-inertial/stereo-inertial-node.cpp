@@ -315,6 +315,7 @@ void StereoInertialNode::SyncWithImu() {
         // copy to row nGoodLandmarks
         memcpy(desc.ptr<uchar>(nGoodLandmarks), landmark->GetDescriptor().data,
                32);
+        assert(landmark->GetDescriptor().cols == 32);
         nGoodLandmarks++;
 
         ++x_it;
@@ -355,19 +356,10 @@ void StereoInertialNode::SyncWithImu() {
         return tf;
       };
 
-      // Eigen::Quaternionf q_rot;
-      // q_rot = Eigen::AngleAxisf(-M_PI_2, Eigen::Vector3f::UnitX()) *
-      //         Eigen::AngleAxisf(M_PI_2, Eigen::Vector3f::UnitY());
-
-      // Sophus::SO3f so3_rot(q_rot);
-
-      // auto T_odom_camera = T_odom_camera_optical *
-      //                      Sophus::SE3f(so3_rot, Eigen::Vector3f(0, 0, 0));
-
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = tImLeftRos;
       odom_msg.header.frame_id = "odom";
-      odom_msg.child_frame_id = "cam0";
+      odom_msg.child_frame_id = sImLeftFrame + "_vio";
       odom_msg.pose.pose.position.x = Twc.translation().x();
       odom_msg.pose.pose.position.y = Twc.translation().y();
       odom_msg.pose.pose.position.z = Twc.translation().z();
@@ -382,10 +374,19 @@ void StereoInertialNode::SyncWithImu() {
       geometry_msgs::msg::TransformStamped T_odom_camera_tf;
       T_odom_camera_tf.header.stamp = tImLeftRos;
       T_odom_camera_tf.header.frame_id = "odom";
-      T_odom_camera_tf.child_frame_id = "cam0";
+      T_odom_camera_tf.child_frame_id = sImLeftFrame + "_vio";
       T_odom_camera_tf.transform = se3ToTF(Twc);
 
       tfBroadcaster_.sendTransform(T_odom_camera_tf);
+
+      geometry_msgs::msg::TransformStamped T_camera_camera_optical_tf;
+      T_camera_camera_optical_tf.header.stamp = tImLeftRos;
+      T_camera_camera_optical_tf.header.frame_id = sImLeftFrame + "_vio";
+      T_camera_camera_optical_tf.child_frame_id = sImLeftFrame;
+      T_camera_camera_optical_tf.transform = se3ToTF(
+          Sophus::SE3f(R_color_color_optical, Eigen::Vector3f(0, 0, 0)));
+
+      staticBroadcaster_.sendTransform(T_camera_camera_optical_tf);
 
       std::chrono::milliseconds tSleep(1);
       std::this_thread::sleep_for(tSleep);

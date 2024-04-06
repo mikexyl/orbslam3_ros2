@@ -3,8 +3,9 @@ from launch_ros.actions import Node
 
 import launch
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
+from launch.actions import ExecuteProcess, DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 
 # fmt: off
 
@@ -13,10 +14,10 @@ def launch_setup(context, *args, **kwargs):
     package='orbslam3_ros2',
     executable='stereo-inertial',
     name='orbslam3_stereo_inertial_node',
-    output='screen',
+    output=LaunchConfiguration("output"),
     arguments=[get_package_share_directory('orbslam3_ros2') + '/vocab/ORBvoc.txt',
                get_package_share_directory('orbslam3_ros2') + '/config/EuRoC.yaml',
-               '1'], # 1 to do recfity
+               '1', '0', '0'], # 1 to do recfity
     remappings=[
       ('camera/left', '/cam0/image_raw'),
       ('camera/right', '/cam1/image_raw'),
@@ -35,18 +36,23 @@ def launch_setup(context, *args, **kwargs):
     executable='rviz2',
     name='rviz2',
     output='screen',
-    arguments=['-d', get_package_share_directory('orbslam3_ros2') + '/rviz/stereo_inertial.rviz']
+    arguments=['-d', get_package_share_directory('orbslam3_ros2') + '/rviz/stereo_inertial.rviz'],
+    condition=IfCondition(LaunchConfiguration("rviz")),
   )
 
   return [orb_slam3_node, bag_player, rviz]
 
 
 def generate_launch_description():
-    bag_file_arg = launch.actions.DeclareLaunchArgument( "bag_file", default_value="/datasets/euroc/MH_03_medium", description="bag file",)
+    bag_file_arg = DeclareLaunchArgument( "bag_file", default_value="/datasets/euroc/MH_03_medium", description="bag file",)
+    output_arg = DeclareLaunchArgument( "output", default_value="screen", description="output directory",)
+    run_rviz_arg = DeclareLaunchArgument( "rviz", default_value="true", description="run rviz",)
 
     return LaunchDescription(
         [
             bag_file_arg,
-            launch.actions.OpaqueFunction(function=launch_setup),
+            output_arg,
+            run_rviz_arg,
+            OpaqueFunction(function=launch_setup),
         ]
     )
