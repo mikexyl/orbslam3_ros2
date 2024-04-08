@@ -440,7 +440,7 @@ void StereoInertialNode::SyncWithImu() {
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = tImLeftRos;
-      odom_msg.header.frame_id = "odom_origin";
+      odom_msg.header.frame_id = "odom";
       odom_msg.child_frame_id = sImLeftFrame + "_vio";
       odom_msg.pose.pose.position.x = Toc_current.translation().x();
       odom_msg.pose.pose.position.y = Toc_current.translation().y();
