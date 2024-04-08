@@ -23,6 +23,7 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
   std::cout << "Rectify: " << doRectify_ << std::endl;
   std::cout << "Equal: " << doEqual_ << std::endl;
 
+  // get T_baselink_camera.
   cv::FileStorage fsSettings(strSettingsFile, cv::FileStorage::READ);
   if (!fsSettings.isOpened()) {
     cerr << "ERROR: Wrong path to settings" << endl;
@@ -49,30 +50,6 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
   T_baselink_camera_.translation().x() = t_baselink_camera_eigen(0);
   T_baselink_camera_.translation().y() = t_baselink_camera_eigen(1);
   T_baselink_camera_.translation().z() = t_baselink_camera_eigen(2);
-
-  // dynamic reconfigure rpy
-  rpy_odom_origin_ = {0, 0, 0};
-  this->declare_parameter<double>("roll", rpy_odom_origin_[0]);
-  this->declare_parameter<double>("pitch", rpy_odom_origin_[1]);
-  this->declare_parameter<double>("yaw", rpy_odom_origin_[2]);
-
-  auto param_change_callback =
-      [this](std::vector<rclcpp::Parameter> parameters) {
-        rcl_interfaces::msg::SetParametersResult result;
-        result.successful = true;
-        for (const auto &parameter : parameters) {
-          if (parameter.get_name() == "roll") {
-            rpy_odom_origin_[0] = parameter.as_double() * M_PI / 180;
-          } else if (parameter.get_name() == "pitch") {
-            rpy_odom_origin_[1] = parameter.as_double() * M_PI / 180;
-          } else if (parameter.get_name() == "yaw") {
-            rpy_odom_origin_[2] = parameter.as_double() * M_PI / 180;
-          }
-        }
-        return result;
-      };
-
-  paramCbHandle_ = this->add_on_set_parameters_callback(param_change_callback);
 
   if (doRectify_) {
 
@@ -316,17 +293,25 @@ void StereoInertialNode::SyncWithImu() {
       cv::Mat desc(landmarks.size(), 32, CV_8UC1);
       size_t nGoodLandmarks = 0;
 
+      auto id_split = [](uint64_t id) {
+        return std::make_pair(static_cast<uint32_t>(id),
+                              static_cast<uint32_t>(id >> 32));
+      };
+
       for (size_t i = 0; i < landmarks.size(); i++) {
         auto const &landmark = landmarks[i];
         if (landmark == nullptr or landmark->isBad() or
             landmark_ids.count(landmark->mnId))
           continue;
+        landmark_ids.insert(landmark->mnId);
         *x_it = landmark->GetWorldPos().x();
         *y_it = landmark->GetWorldPos().y();
         *z_it = landmark->GetWorldPos().z();
 
-        *id_low_it = landmark->mnId & 0xFFFFFFFF;
-        *id_high_it = landmark->mnId >> 32;
+        auto const &[id_low, id_high] = id_split(landmark->mnId);
+
+        *id_low_it = id_low;
+        *id_high_it = id_high;
         *u_it = -1; // since landmarks only save its observation in keyframes,
                     // we don't have u, v
         *v_it = -1;
@@ -436,7 +421,7 @@ void StereoInertialNode::SyncWithImu() {
       T_map_odom_tf.child_frame_id = "odom";
       T_map_odom_tf.transform = se3ToTF(Two);
 
-      staticBroadcaster_.sendTransform(T_map_odom_tf);
+      tfBroadcaster_.sendTransform(T_map_odom_tf);
 
       nav_msgs::msg::Odometry odom_msg;
       odom_msg.header.stamp = tImLeftRos;
@@ -459,6 +444,14 @@ void StereoInertialNode::SyncWithImu() {
       T_odom_camera_tf.child_frame_id = sImLeftFrame + "_vio";
       T_odom_camera_tf.transform = se3ToTF(Toc_current);
       tfBroadcaster_.sendTransform(T_odom_camera_tf);
+
+      // publish tf from camera to baselink
+      geometry_msgs::msg::TransformStamped T_baselink_camera_tf;
+      T_baselink_camera_tf.header.stamp = tImLeftRos;
+      T_baselink_camera_tf.header.frame_id = sImLeftFrame + "_vio";
+      T_baselink_camera_tf.child_frame_id = "baselink";
+      T_baselink_camera_tf.transform = se3ToTF(T_baselink_camera_);
+      tfBroadcaster_.sendTransform(T_baselink_camera_tf);
 
       std::chrono::milliseconds tSleep(1);
       std::this_thread::sleep_for(tSleep);

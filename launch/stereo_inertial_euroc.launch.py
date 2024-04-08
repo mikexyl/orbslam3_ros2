@@ -40,12 +40,7 @@ def launch_setup(context, *args, **kwargs):
     condition=IfCondition(LaunchConfiguration("rviz")),
   )
   
-  rqt_dynamic_reconfigure=ExecuteProcess(
-    cmd=['rqt'],
-    output='screen',
-  )
-
-  return [orb_slam3_node, bag_player, rviz, rqt_dynamic_reconfigure]
+  return [orb_slam3_node, bag_player, rviz]
 
 
 def generate_launch_description():

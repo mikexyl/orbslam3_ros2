@@ -65,8 +65,6 @@ private:
   tf2_ros::TransformBroadcaster tfBroadcaster_;
   tf2_ros::StaticTransformBroadcaster staticBroadcaster_;
   Sophus::SE3f T_baselink_camera_;
-  std::vector<double> rpy_odom_origin_;
-  OnSetParametersCallbackHandle::SharedPtr paramCbHandle_;
 };
 
 #endif
