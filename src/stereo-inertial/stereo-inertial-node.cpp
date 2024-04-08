@@ -1,5 +1,6 @@
 #include "stereo-inertial-node.hpp"
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <opencv2/core/core.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <tf2/LinearMath/Quaternion.h>
@@ -48,6 +49,30 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
   T_baselink_camera_.translation().x() = t_baselink_camera_eigen(0);
   T_baselink_camera_.translation().y() = t_baselink_camera_eigen(1);
   T_baselink_camera_.translation().z() = t_baselink_camera_eigen(2);
+
+  // dynamic reconfigure rpy
+  rpy_odom_origin_ = {0, 0, 0};
+  this->declare_parameter<double>("roll", rpy_odom_origin_[0]);
+  this->declare_parameter<double>("pitch", rpy_odom_origin_[1]);
+  this->declare_parameter<double>("yaw", rpy_odom_origin_[2]);
+
+  auto param_change_callback =
+      [this](std::vector<rclcpp::Parameter> parameters) {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        for (const auto &parameter : parameters) {
+          if (parameter.get_name() == "roll") {
+            rpy_odom_origin_[0] = parameter.as_double() * M_PI / 180;
+          } else if (parameter.get_name() == "pitch") {
+            rpy_odom_origin_[1] = parameter.as_double() * M_PI / 180;
+          } else if (parameter.get_name() == "yaw") {
+            rpy_odom_origin_[2] = parameter.as_double() * M_PI / 180;
+          }
+        }
+        return result;
+      };
+
+  paramCbHandle_ = this->add_on_set_parameters_callback(param_change_callback);
 
   if (doRectify_) {
 
@@ -99,6 +124,7 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
   pubDesc_ =
       this->create_publisher<sensor_msgs::msg::Image>("descriptors", 1000);
   pubOdom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 1000);
+  pubPath_ = this->create_publisher<nav_msgs::msg::Path>("path", 1000);
 
   syncThread_ = new std::thread(&StereoInertialNode::SyncWithImu, this);
 }
@@ -238,16 +264,10 @@ void StereoInertialNode::SyncWithImu() {
         cv::remap(imRight, imRight, M1r_, M2r_, cv::INTER_LINEAR);
       }
 
-      // TODO: let's assume it's left camera pose
-      Sophus::SE3f Twc_optical =
-          SLAM_->TrackStereo(imLeft, imRight, tImLeft, vImuMeas).inverse();
+      SLAM_->TrackStereo(imLeft, imRight, tImLeft, vImuMeas);
 
       Eigen::Matrix3f R_color_color_optical;
       R_color_color_optical << 0, 0, 1, -1, 0, 0, 0, -1, 0;
-
-      Sophus::SE3f Twc =
-          Twc_optical * Sophus::SE3f(R_color_color_optical.inverse(),
-                                     Eigen::Vector3f(0, 0, 0));
 
       // only publish when the system is "OK"
       auto status = SLAM_->GetTrackingState();
@@ -257,7 +277,7 @@ void StereoInertialNode::SyncWithImu() {
       sensor_msgs::msg::PointCloud2::SharedPtr landmark_cloud_msg(
           new sensor_msgs::msg::PointCloud2);
       landmark_cloud_msg->header.stamp = tImLeftRos;
-      landmark_cloud_msg->header.frame_id = "odom";
+      landmark_cloud_msg->header.frame_id = "map";
       landmark_cloud_msg->height = 1;
 
       sensor_msgs::PointCloud2Modifier modifier(*landmark_cloud_msg);
@@ -301,10 +321,10 @@ void StereoInertialNode::SyncWithImu() {
         if (landmark == nullptr or landmark->isBad() or
             landmark_ids.count(landmark->mnId))
           continue;
-        landmark_ids.insert(landmark->mnId);
         *x_it = landmark->GetWorldPos().x();
         *y_it = landmark->GetWorldPos().y();
         *z_it = landmark->GetWorldPos().z();
+
         *id_low_it = landmark->mnId & 0xFFFFFFFF;
         *id_high_it = landmark->mnId >> 32;
         *u_it = -1; // since landmarks only save its observation in keyframes,
@@ -356,29 +376,6 @@ void StereoInertialNode::SyncWithImu() {
         return tf;
       };
 
-      nav_msgs::msg::Odometry odom_msg;
-      odom_msg.header.stamp = tImLeftRos;
-      odom_msg.header.frame_id = "odom";
-      odom_msg.child_frame_id = sImLeftFrame + "_vio";
-      odom_msg.pose.pose.position.x = Twc.translation().x();
-      odom_msg.pose.pose.position.y = Twc.translation().y();
-      odom_msg.pose.pose.position.z = Twc.translation().z();
-
-      odom_msg.pose.pose.orientation.x = Twc.unit_quaternion().x();
-      odom_msg.pose.pose.orientation.y = Twc.unit_quaternion().y();
-      odom_msg.pose.pose.orientation.z = Twc.unit_quaternion().z();
-      odom_msg.pose.pose.orientation.w = Twc.unit_quaternion().w();
-
-      pubOdom_->publish(odom_msg);
-
-      geometry_msgs::msg::TransformStamped T_odom_camera_tf;
-      T_odom_camera_tf.header.stamp = tImLeftRos;
-      T_odom_camera_tf.header.frame_id = "odom";
-      T_odom_camera_tf.child_frame_id = sImLeftFrame + "_vio";
-      T_odom_camera_tf.transform = se3ToTF(Twc);
-
-      tfBroadcaster_.sendTransform(T_odom_camera_tf);
-
       geometry_msgs::msg::TransformStamped T_camera_camera_optical_tf;
       T_camera_camera_optical_tf.header.stamp = tImLeftRos;
       T_camera_camera_optical_tf.header.frame_id = sImLeftFrame + "_vio";
@@ -387,6 +384,81 @@ void StereoInertialNode::SyncWithImu() {
           Sophus::SE3f(R_color_color_optical, Eigen::Vector3f(0, 0, 0)));
 
       staticBroadcaster_.sendTransform(T_camera_camera_optical_tf);
+
+      std::map<double, Sophus::SE3f> optimized_trajectory_optical;
+      Sophus::SE3f Two;
+      SLAM_->GetTrajectory(optimized_trajectory_optical, Two);
+
+      auto optical_to_camera =
+          [](const std::map<double, Sophus::SE3f> &optimized_trajectory) {
+            std::map<double, Sophus::SE3f> Twc;
+            for (auto &[timestamp, Twc_optical] : optimized_trajectory) {
+              Eigen::Matrix3f R_color_color_optical;
+              R_color_color_optical << 0, 0, 1, -1, 0, 0, 0, -1, 0;
+              Twc.emplace(timestamp,
+                          Twc_optical *
+                              Sophus::SE3f(R_color_color_optical.inverse(),
+                                           Eigen::Vector3f(0, 0, 0)));
+            }
+            return Twc;
+          };
+
+      auto optimized_trajectory =
+          optical_to_camera(optimized_trajectory_optical);
+
+      nav_msgs::msg::Path path_msg;
+      for (auto const &[timestamp, Twc] : optimized_trajectory) {
+        geometry_msgs::msg::PoseStamped pose_msg;
+        rclcpp::Time t(timestamp * 1e9);
+        pose_msg.header.stamp = t;
+        pose_msg.header.frame_id = "odom";
+        pose_msg.pose.position.x = Twc.translation().x();
+        pose_msg.pose.position.y = Twc.translation().y();
+        pose_msg.pose.position.z = Twc.translation().z();
+
+        pose_msg.pose.orientation.x = Twc.unit_quaternion().x();
+        pose_msg.pose.orientation.y = Twc.unit_quaternion().y();
+        pose_msg.pose.orientation.z = Twc.unit_quaternion().z();
+        pose_msg.pose.orientation.w = Twc.unit_quaternion().w();
+
+        path_msg.poses.push_back(pose_msg);
+      }
+
+      auto Toc_current = optimized_trajectory.rbegin()->second;
+
+      path_msg.header.stamp = tImLeftRos;
+      path_msg.header.frame_id = "odom";
+      pubPath_->publish(path_msg);
+
+      geometry_msgs::msg::TransformStamped T_map_odom_tf;
+      T_map_odom_tf.header.stamp = tImLeftRos;
+      T_map_odom_tf.header.frame_id = "map";
+      T_map_odom_tf.child_frame_id = "odom";
+      T_map_odom_tf.transform = se3ToTF(Two);
+
+      staticBroadcaster_.sendTransform(T_map_odom_tf);
+
+      nav_msgs::msg::Odometry odom_msg;
+      odom_msg.header.stamp = tImLeftRos;
+      odom_msg.header.frame_id = "odom_origin";
+      odom_msg.child_frame_id = sImLeftFrame + "_vio";
+      odom_msg.pose.pose.position.x = Toc_current.translation().x();
+      odom_msg.pose.pose.position.y = Toc_current.translation().y();
+      odom_msg.pose.pose.position.z = Toc_current.translation().z();
+
+      odom_msg.pose.pose.orientation.x = Toc_current.unit_quaternion().x();
+      odom_msg.pose.pose.orientation.y = Toc_current.unit_quaternion().y();
+      odom_msg.pose.pose.orientation.z = Toc_current.unit_quaternion().z();
+      odom_msg.pose.pose.orientation.w = Toc_current.unit_quaternion().w();
+
+      pubOdom_->publish(odom_msg);
+
+      geometry_msgs::msg::TransformStamped T_odom_camera_tf;
+      T_odom_camera_tf.header.stamp = tImLeftRos;
+      T_odom_camera_tf.header.frame_id = "odom";
+      T_odom_camera_tf.child_frame_id = sImLeftFrame + "_vio";
+      T_odom_camera_tf.transform = se3ToTF(Toc_current);
+      tfBroadcaster_.sendTransform(T_odom_camera_tf);
 
       std::chrono::milliseconds tSleep(1);
       std::this_thread::sleep_for(tSleep);

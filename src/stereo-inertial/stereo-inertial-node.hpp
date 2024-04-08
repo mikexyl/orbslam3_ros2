@@ -2,6 +2,7 @@
 #define __STEREO_INERTIAL_NODE_HPP__
 
 #include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -60,9 +61,12 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLandmarks_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubDesc_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdom_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
   tf2_ros::TransformBroadcaster tfBroadcaster_;
   tf2_ros::StaticTransformBroadcaster staticBroadcaster_;
   Sophus::SE3f T_baselink_camera_;
+  std::vector<double> rpy_odom_origin_;
+  OnSetParametersCallbackHandle::SharedPtr paramCbHandle_;
 };
 
 #endif

@@ -27,7 +27,7 @@ def launch_setup(context, *args, **kwargs):
   )
 
   bag_player=ExecuteProcess(
-    cmd=['ros2', 'bag', 'play', LaunchConfiguration("bag_file"), '--clock', '-r', '0.2', '--loop'],
+    cmd=['ros2', 'bag', 'play', LaunchConfiguration("bag_file"), '--clock', '-r', '1', '--loop', '--start-offset', '15'],
     output='screen',
   )
 
@@ -39,8 +39,13 @@ def launch_setup(context, *args, **kwargs):
     arguments=['-d', get_package_share_directory('orbslam3_ros2') + '/rviz/stereo_inertial.rviz'],
     condition=IfCondition(LaunchConfiguration("rviz")),
   )
+  
+  rqt_dynamic_reconfigure=ExecuteProcess(
+    cmd=['rqt'],
+    output='screen',
+  )
 
-  return [orb_slam3_node, bag_player, rviz]
+  return [orb_slam3_node, bag_player, rviz, rqt_dynamic_reconfigure]
 
 
 def generate_launch_description():
