@@ -17,7 +17,7 @@ def launch_setup(context, *args, **kwargs):
     output=LaunchConfiguration("output"),
     arguments=[get_package_share_directory('orbslam3_ros2') + '/vocab/ORBvoc.txt',
                get_package_share_directory('orbslam3_ros2') + '/config/EuRoC.yaml',
-               '1', '0', '0'], # 1 to do recfity
+               '1'], # 1 to do recfity
     remappings=[
       ('camera/left', '/cam0/image_raw'),
       ('camera/right', '/cam1/image_raw'),

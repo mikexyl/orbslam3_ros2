@@ -1,12 +1,14 @@
 #ifndef __STEREO_INERTIAL_NODE_HPP__
 #define __STEREO_INERTIAL_NODE_HPP__
 
+#include <aria_msg/msg/frame.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/u_int32_multi_array.hpp>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 
@@ -24,8 +26,7 @@ using ImageMsg = sensor_msgs::msg::Image;
 
 class StereoInertialNode : public rclcpp::Node {
 public:
-  StereoInertialNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile,
-                     const string &strDoRectify, const string &strDoEqual);
+  StereoInertialNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile);
   ~StereoInertialNode();
 
 private:
@@ -50,21 +51,16 @@ private:
   queue<ImageMsg::SharedPtr> imgLeftBuf_, imgRightBuf_;
   std::mutex bufMutexLeft_, bufMutexRight_;
 
-  bool doRectify_;
-  bool doEqual_;
-  cv::Mat M1l_, M2l_, M1r_, M2r_;
-
-  bool bClahe_;
-  cv::Ptr<cv::CLAHE> clahe_ = cv::createCLAHE(3.0, cv::Size(8, 8));
-
   // outputs of features
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLandmarks_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pubDesc_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdom_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
+  rclcpp::Publisher<aria_msg::msg::Frame>::SharedPtr pubFrame_;
   tf2_ros::TransformBroadcaster tfBroadcaster_;
   tf2_ros::StaticTransformBroadcaster staticBroadcaster_;
   Sophus::SE3f T_baselink_camera_;
+  sensor_msgs::msg::CameraInfo leftCameraInfo_;
 };
 
 #endif

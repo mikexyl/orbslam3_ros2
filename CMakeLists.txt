@@ -21,6 +21,7 @@ find_package(tf2_ros REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(ORB_SLAM3 REQUIRED)
+find_package(aria_msg REQUIRED)
 
 include_directories(
   include
@@ -32,7 +33,7 @@ add_executable(stereo-inertial
   src/stereo-inertial/stereo-inertial.cpp
   src/stereo-inertial/stereo-inertial-node.cpp
 )
-ament_target_dependencies(stereo-inertial rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin tf2_ros)
+ament_target_dependencies(stereo-inertial rclcpp nav_msgs sensor_msgs cv_bridge ORB_SLAM3 Pangolin tf2_ros aria_msg)
 
 install(TARGETS stereo-inertial
   DESTINATION lib/${PROJECT_NAME})

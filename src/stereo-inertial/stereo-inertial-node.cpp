@@ -8,21 +8,9 @@
 using std::placeholders::_1;
 
 StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
-                                       const string &strSettingsFile,
-                                       const string &strDoRectify,
-                                       const string &strDoEqual)
+                                       const string &strSettingsFile)
     : Node("ORB_SLAM3_ROS2"), SLAM_(SLAM), tfBroadcaster_(this),
       staticBroadcaster_(this) {
-  stringstream ss_rec(strDoRectify);
-  ss_rec >> boolalpha >> doRectify_;
-
-  stringstream ss_eq(strDoEqual);
-  ss_eq >> boolalpha >> doEqual_;
-
-  bClahe_ = doEqual_;
-  std::cout << "Rectify: " << doRectify_ << std::endl;
-  std::cout << "Equal: " << doEqual_ << std::endl;
-
   // get T_baselink_camera.
   cv::FileStorage fsSettings(strSettingsFile, cv::FileStorage::READ);
   if (!fsSettings.isOpened()) {
@@ -51,41 +39,17 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
   T_baselink_camera_.translation().y() = t_baselink_camera_eigen(1);
   T_baselink_camera_.translation().z() = t_baselink_camera_eigen(2);
 
-  if (doRectify_) {
+  leftCameraInfo_.k.at(0) = fsSettings["Camera1.fx"];
+  leftCameraInfo_.k.at(2) = fsSettings["Camera1.cx"];
+  leftCameraInfo_.k.at(4) = fsSettings["Camera1.fy"];
+  leftCameraInfo_.k.at(5) = fsSettings["Camera1.cy"];
+  leftCameraInfo_.k.at(8) = 1;
 
-    cv::Mat K_l, K_r, P_l, P_r, R_l, R_r, D_l, D_r;
-    fsSettings["LEFT.K"] >> K_l;
-    fsSettings["RIGHT.K"] >> K_r;
-
-    fsSettings["LEFT.P"] >> P_l;
-    fsSettings["RIGHT.P"] >> P_r;
-
-    fsSettings["LEFT.R"] >> R_l;
-    fsSettings["RIGHT.R"] >> R_r;
-
-    fsSettings["LEFT.D"] >> D_l;
-    fsSettings["RIGHT.D"] >> D_r;
-
-    int rows_l = fsSettings["LEFT.height"];
-    int cols_l = fsSettings["LEFT.width"];
-    int rows_r = fsSettings["RIGHT.height"];
-    int cols_r = fsSettings["RIGHT.width"];
-
-    if (K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() ||
-        R_l.empty() || R_r.empty() || D_l.empty() || D_r.empty() ||
-        rows_l == 0 || rows_r == 0 || cols_l == 0 || cols_r == 0) {
-      cerr << "ERROR: Calibration parameters to rectify stereo are missing!"
-           << endl;
-      assert(0);
-    }
-
-    cv::initUndistortRectifyMap(K_l, D_l, R_l,
-                                P_l.rowRange(0, 3).colRange(0, 3),
-                                cv::Size(cols_l, rows_l), CV_32F, M1l_, M2l_);
-    cv::initUndistortRectifyMap(K_r, D_r, R_r,
-                                P_r.rowRange(0, 3).colRange(0, 3),
-                                cv::Size(cols_r, rows_r), CV_32F, M1r_, M2r_);
-  }
+  leftCameraInfo_.d.resize(4);
+  leftCameraInfo_.d.at(0) = fsSettings["Camera1.k1"];
+  leftCameraInfo_.d.at(1) = fsSettings["Camera1.k2"];
+  leftCameraInfo_.d.at(2) = fsSettings["Camera1.p1"];
+  leftCameraInfo_.d.at(3) = fsSettings["Camera1.p2"];
 
   subImu_ = this->create_subscription<ImuMsg>(
       "imu", 1000, std::bind(&StereoInertialNode::GrabImu, this, _1));
@@ -102,6 +66,7 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM,
       this->create_publisher<sensor_msgs::msg::Image>("descriptors", 1000);
   pubOdom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 1000);
   pubPath_ = this->create_publisher<nav_msgs::msg::Path>("path", 1000);
+  pubFrame_ = this->create_publisher<aria_msg::msg::Frame>("frame", 1000);
 
   syncThread_ = new std::thread(&StereoInertialNode::SyncWithImu, this);
 }
@@ -195,7 +160,6 @@ void StereoInertialNode::SyncWithImu() {
 
       if ((tImLeft - tImRight) > maxTimeDiff ||
           (tImRight - tImLeft) > maxTimeDiff) {
-        std::cout << "big time difference" << std::endl;
         continue;
       }
       if (tImLeft > Utility::StampToSec(imuBuf_.back()->header.stamp))
@@ -231,16 +195,6 @@ void StereoInertialNode::SyncWithImu() {
       }
       bufMutex_.unlock();
 
-      if (bClahe_) {
-        clahe_->apply(imLeft, imLeft);
-        clahe_->apply(imRight, imRight);
-      }
-
-      if (doRectify_) {
-        cv::remap(imLeft, imLeft, M1l_, M2l_, cv::INTER_LINEAR);
-        cv::remap(imRight, imRight, M1r_, M2r_, cv::INTER_LINEAR);
-      }
-
       SLAM_->TrackStereo(imLeft, imRight, tImLeft, vImuMeas);
 
       Eigen::Matrix3f R_color_color_optical;
@@ -250,125 +204,6 @@ void StereoInertialNode::SyncWithImu() {
       auto status = SLAM_->GetTrackingState();
       if (status != ORB_SLAM3::Tracking::eTrackingState::OK)
         continue;
-
-      sensor_msgs::msg::PointCloud2::SharedPtr landmark_cloud_msg(
-          new sensor_msgs::msg::PointCloud2);
-      landmark_cloud_msg->header.stamp = tImLeftRos;
-      landmark_cloud_msg->header.frame_id = "map";
-      landmark_cloud_msg->height = 1;
-
-      sensor_msgs::PointCloud2Modifier modifier(*landmark_cloud_msg);
-      // clang-format off
-      modifier.setPointCloud2Fields(8, // no format
-                                "x", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "y", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "id_low", 1, sensor_msgs::msg::PointField::UINT32,
-                                "id_high", 1, sensor_msgs::msg::PointField::UINT32,
-                                "u", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "v", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "keypoint_id", 1, sensor_msgs::msg::PointField::UINT32
-                               );
-      // clang-format on
-
-      // publish features
-      auto const &landmarks = SLAM_->GetTrackedMapPoints();
-
-      modifier.resize(landmarks.size());
-      sensor_msgs::PointCloud2Iterator<float> x_it(*landmark_cloud_msg, "x");
-      sensor_msgs::PointCloud2Iterator<float> y_it(*landmark_cloud_msg, "y");
-      sensor_msgs::PointCloud2Iterator<float> z_it(*landmark_cloud_msg, "z");
-      sensor_msgs::PointCloud2Iterator<uint32_t> id_low_it(*landmark_cloud_msg,
-                                                           "id_low");
-      sensor_msgs::PointCloud2Iterator<uint32_t> id_high_it(*landmark_cloud_msg,
-                                                            "id_high");
-      sensor_msgs::PointCloud2Iterator<float> u_it(*landmark_cloud_msg, "u");
-      sensor_msgs::PointCloud2Iterator<float> v_it(*landmark_cloud_msg, "v");
-      sensor_msgs::PointCloud2Iterator<uint32_t> keypoint_id_it(
-          *landmark_cloud_msg, "keypoint_id");
-
-      std::set<long unsigned int> landmark_ids;
-
-      // descriptor as image
-      cv::Mat desc(landmarks.size(), 32, CV_8UC1);
-      size_t nGoodLandmarks = 0;
-
-      auto id_split = [](uint64_t id) {
-        return std::make_pair(static_cast<uint32_t>(id),
-                              static_cast<uint32_t>(id >> 32));
-      };
-
-      for (size_t i = 0; i < landmarks.size(); i++) {
-        auto const &landmark = landmarks[i];
-        if (landmark == nullptr or landmark->isBad() or
-            landmark_ids.count(landmark->mnId))
-          continue;
-        landmark_ids.insert(landmark->mnId);
-        *x_it = landmark->GetWorldPos().x();
-        *y_it = landmark->GetWorldPos().y();
-        *z_it = landmark->GetWorldPos().z();
-
-        auto const &[id_low, id_high] = id_split(landmark->mnId);
-
-        *id_low_it = id_low;
-        *id_high_it = id_high;
-        *u_it = -1; // since landmarks only save its observation in keyframes,
-                    // we don't have u, v
-        *v_it = -1;
-        *keypoint_id_it = nGoodLandmarks;
-
-        // copy to row nGoodLandmarks
-        memcpy(desc.ptr<uchar>(nGoodLandmarks), landmark->GetDescriptor().data,
-               32);
-        assert(landmark->GetDescriptor().cols == 32);
-        nGoodLandmarks++;
-
-        ++x_it;
-        ++y_it;
-        ++z_it;
-        ++id_low_it;
-        ++id_high_it;
-        ++u_it;
-        ++v_it;
-        ++keypoint_id_it;
-      }
-
-      modifier.resize(nGoodLandmarks);
-
-      // resize the descriptor image
-      cv::Mat valid_desc_image = desc.rowRange(0, nGoodLandmarks);
-
-      sensor_msgs::msg::Image desc_msg;
-      cv_bridge::CvImage desc_cv;
-      desc_cv.image = valid_desc_image;
-      desc_cv.encoding = sensor_msgs::image_encodings::TYPE_8UC1;
-      desc_cv.toImageMsg(desc_msg);
-      desc_msg.header.stamp = tImLeftRos;
-      desc_msg.header.frame_id = sImLeftFrame;
-
-      pubLandmarks_->publish(*landmark_cloud_msg);
-      pubDesc_->publish(desc_msg);
-
-      auto se3ToTF = [](const Sophus::SE3f &T) {
-        geometry_msgs::msg::Transform tf;
-        tf.translation.x = T.translation().x();
-        tf.translation.y = T.translation().y();
-        tf.translation.z = T.translation().z();
-        tf.rotation.x = T.unit_quaternion().x();
-        tf.rotation.y = T.unit_quaternion().y();
-        tf.rotation.z = T.unit_quaternion().z();
-        tf.rotation.w = T.unit_quaternion().w();
-        return tf;
-      };
-
-      geometry_msgs::msg::TransformStamped T_camera_camera_optical_tf;
-      T_camera_camera_optical_tf.header.stamp = tImLeftRos;
-      T_camera_camera_optical_tf.header.frame_id = sImLeftFrame + "_vio";
-      T_camera_camera_optical_tf.child_frame_id = sImLeftFrame;
-      T_camera_camera_optical_tf.transform = se3ToTF(
-          Sophus::SE3f(R_color_color_optical, Eigen::Vector3f(0, 0, 0)));
-
-      staticBroadcaster_.sendTransform(T_camera_camera_optical_tf);
 
       std::map<double, Sophus::SE3f> optimized_trajectory_optical;
       Sophus::SE3f Two;
@@ -411,6 +246,134 @@ void StereoInertialNode::SyncWithImu() {
 
       auto Toc_current = optimized_trajectory.rbegin()->second;
 
+      aria_msg::msg::Frame frame_msg;
+
+      frame_msg.header.stamp = tImLeftRos;
+      frame_msg.header.frame_id = sImLeftFrame;
+
+      auto bow_vec = SLAM_->GetCurrentFrameBowVec();
+      for (auto [word_id, word_weight] : bow_vec) {
+        frame_msg.global_descriptor.ids.push_back(word_id);
+        frame_msg.global_descriptor.values.push_back(word_weight);
+      }
+
+      cv_bridge::CvImage cv_image;
+      cv_image.image = imLeft;
+      cv_image.encoding = sensor_msgs::image_encodings::MONO8;
+      cv_image.toImageMsg(frame_msg.left_image);
+
+      frame_msg.landmarks.header.stamp = tImLeftRos;
+      frame_msg.landmarks.header.frame_id = "odom";
+      frame_msg.landmarks.height = 1;
+
+      sensor_msgs::PointCloud2Modifier modifier(frame_msg.landmarks);
+      // clang-format off
+      modifier.setPointCloud2Fields(6, // no format
+                                "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "z", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "id_low", 1, sensor_msgs::msg::PointField::UINT32,
+                                "id_high", 1, sensor_msgs::msg::PointField::UINT32,
+                                "keypoint_id", 1, sensor_msgs::msg::PointField::UINT32
+                               );
+      // clang-format on
+
+      // publish features
+      auto const &landmarks = SLAM_->GetTrackedMapPoints();
+      auto const &keypoints = SLAM_->GetTrackedKeyPointsUn();
+      cv::Mat local_descriptors = SLAM_->GetDescriptors();
+      if (local_descriptors.empty()) {
+        std::cout << "empty descriptors! skipping frame" << std::endl;
+        continue;
+      }
+
+      modifier.resize(landmarks.size());
+      sensor_msgs::PointCloud2Iterator<float> x_it(frame_msg.landmarks, "x");
+      sensor_msgs::PointCloud2Iterator<float> y_it(frame_msg.landmarks, "y");
+      sensor_msgs::PointCloud2Iterator<float> z_it(frame_msg.landmarks, "z");
+      sensor_msgs::PointCloud2Iterator<uint32_t> id_low_it(frame_msg.landmarks,
+                                                           "id_low");
+      sensor_msgs::PointCloud2Iterator<uint32_t> id_high_it(frame_msg.landmarks,
+                                                            "id_high");
+      sensor_msgs::PointCloud2Iterator<uint32_t> keypoint_id_it(
+          frame_msg.landmarks, "keypoint_id");
+
+      std::set<long unsigned int> landmark_ids;
+
+      // descriptor as image
+      size_t nGoodLandmarks = 0;
+
+      auto id_split = [](uint64_t id) {
+        return std::make_pair(static_cast<uint32_t>(id),
+                              static_cast<uint32_t>(id >> 32));
+      };
+
+      for (size_t i = 0; i < landmarks.size(); i++) {
+        auto const &landmark = landmarks[i];
+        if (landmark == nullptr or landmark->isBad() or
+            landmark_ids.count(landmark->mnId))
+          continue;
+        landmark_ids.insert(landmark->mnId);
+        auto T_o_landmark = Two.inverse() * landmark->GetWorldPos();
+        *x_it = T_o_landmark.x();
+        *y_it = T_o_landmark.y();
+        *z_it = T_o_landmark.z();
+
+        auto const &[id_low, id_high] = id_split(landmark->mnId);
+
+        *id_low_it = id_low;
+        *id_high_it = id_high;
+        *keypoint_id_it = i;
+
+        nGoodLandmarks++;
+
+        ++x_it;
+        ++y_it;
+        ++z_it;
+        ++id_low_it;
+        ++id_high_it;
+        ++keypoint_id_it;
+      }
+
+      modifier.resize(nGoodLandmarks);
+
+      frame_msg.keypoints.resize(keypoints.size() * 2);
+      for (size_t i = 0; i < keypoints.size(); i++) {
+        frame_msg.keypoints[i * 2] = keypoints[i].pt.x;
+        frame_msg.keypoints[i * 2 + 1] = keypoints[i].pt.y;
+      }
+
+      cv_bridge::CvImage desc_cv;
+      desc_cv.image = local_descriptors;
+      desc_cv.encoding = sensor_msgs::image_encodings::TYPE_8UC1;
+      desc_cv.toImageMsg(frame_msg.local_descriptors);
+      frame_msg.local_descriptors.header.stamp = tImLeftRos;
+      frame_msg.local_descriptors.header.frame_id = sImLeftFrame;
+
+      pubLandmarks_->publish(frame_msg.landmarks);
+      pubDesc_->publish(frame_msg.local_descriptors);
+
+      auto se3ToTF = [](const Sophus::SE3f &T) {
+        geometry_msgs::msg::Transform tf;
+        tf.translation.x = T.translation().x();
+        tf.translation.y = T.translation().y();
+        tf.translation.z = T.translation().z();
+        tf.rotation.x = T.unit_quaternion().x();
+        tf.rotation.y = T.unit_quaternion().y();
+        tf.rotation.z = T.unit_quaternion().z();
+        tf.rotation.w = T.unit_quaternion().w();
+        return tf;
+      };
+
+      geometry_msgs::msg::TransformStamped T_camera_camera_optical_tf;
+      T_camera_camera_optical_tf.header.stamp = tImLeftRos;
+      T_camera_camera_optical_tf.header.frame_id = sImLeftFrame + "_vio";
+      T_camera_camera_optical_tf.child_frame_id = sImLeftFrame;
+      T_camera_camera_optical_tf.transform = se3ToTF(
+          Sophus::SE3f(R_color_color_optical, Eigen::Vector3f(0, 0, 0)));
+
+      staticBroadcaster_.sendTransform(T_camera_camera_optical_tf);
+
       path_msg.header.stamp = tImLeftRos;
       path_msg.header.frame_id = "odom";
       pubPath_->publish(path_msg);
@@ -435,6 +398,13 @@ void StereoInertialNode::SyncWithImu() {
       odom_msg.pose.pose.orientation.y = Toc_current.unit_quaternion().y();
       odom_msg.pose.pose.orientation.z = Toc_current.unit_quaternion().z();
       odom_msg.pose.pose.orientation.w = Toc_current.unit_quaternion().w();
+
+      frame_msg.camera_pose = odom_msg.pose.pose;
+
+      frame_msg.camera_info = leftCameraInfo_;
+      frame_msg.camera_info.header = frame_msg.header;
+      frame_msg.camera_info.height = imLeft.rows;
+      frame_msg.camera_info.width = imLeft.cols;
 
       pubOdom_->publish(odom_msg);
 
