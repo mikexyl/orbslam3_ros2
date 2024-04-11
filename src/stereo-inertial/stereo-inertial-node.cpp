@@ -308,7 +308,9 @@ void StereoInertialNode::SyncWithImu() {
                               static_cast<uint32_t>(id >> 32));
       };
 
-      for (size_t i = 0; i < landmarks.size(); i++) {
+      assert (landmarks.size() == keypoints.size());
+
+      for (uint32_t i = 0; i < landmarks.size(); i++) {
         auto const &landmark = landmarks[i];
         if (landmark == nullptr or landmark->isBad() or
             landmark_ids.count(landmark->mnId))
@@ -405,6 +407,8 @@ void StereoInertialNode::SyncWithImu() {
       frame_msg.camera_info.header = frame_msg.header;
       frame_msg.camera_info.height = imLeft.rows;
       frame_msg.camera_info.width = imLeft.cols;
+
+      pubFrame_->publish(frame_msg);
 
       pubOdom_->publish(odom_msg);
 
