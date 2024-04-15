@@ -308,7 +308,10 @@ void StereoInertialNode::SyncWithImu() {
                               static_cast<uint32_t>(id >> 32));
       };
 
-      assert (landmarks.size() == keypoints.size());
+      assert(landmarks.size() == keypoints.size());
+
+      cv::Mat landmark_descriptors(landmarks.size(), local_descriptors.cols,
+                                   local_descriptors.type());
 
       for (uint32_t i = 0; i < landmarks.size(); i++) {
         auto const &landmark = landmarks[i];
@@ -327,6 +330,9 @@ void StereoInertialNode::SyncWithImu() {
         *id_high_it = id_high;
         *keypoint_id_it = i;
 
+        local_descriptors.row(i).copyTo(
+            landmark_descriptors.row(nGoodLandmarks));
+
         nGoodLandmarks++;
 
         ++x_it;
@@ -338,6 +344,12 @@ void StereoInertialNode::SyncWithImu() {
       }
 
       modifier.resize(nGoodLandmarks);
+
+      landmark_descriptors.resize(nGoodLandmarks);
+      cv_bridge::CvImage landmark_desc_cv;
+      landmark_desc_cv.image = landmark_descriptors;
+      landmark_desc_cv.encoding = sensor_msgs::image_encodings::TYPE_8UC1;
+      landmark_desc_cv.toImageMsg(frame_msg.landmark_local_descriptors);
 
       frame_msg.keypoints.resize(keypoints.size() * 2);
       for (size_t i = 0; i < keypoints.size(); i++) {
@@ -351,6 +363,17 @@ void StereoInertialNode::SyncWithImu() {
       desc_cv.toImageMsg(frame_msg.local_descriptors);
       frame_msg.local_descriptors.header.stamp = tImLeftRos;
       frame_msg.local_descriptors.header.frame_id = sImLeftFrame;
+
+      // save feature vector of current frame
+      frame_msg.local_feature_vector.node_ids.clear();
+      frame_msg.local_feature_vector.feature_ids.clear();
+      for (auto const &[node_id, feature_ids] :
+           SLAM_->GetCurrentFrameFeatVec()) {
+        frame_msg.local_feature_vector.node_ids.push_back(node_id);
+        std_msgs::msg::UInt32MultiArray feature_ids_msg;
+        feature_ids_msg.data = feature_ids;
+        frame_msg.local_feature_vector.feature_ids.push_back(feature_ids_msg);
+      }
 
       pubLandmarks_->publish(frame_msg.landmarks);
       pubDesc_->publish(frame_msg.local_descriptors);
