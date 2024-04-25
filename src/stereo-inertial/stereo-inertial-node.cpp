@@ -223,6 +223,8 @@ void StereoInertialNode::SyncWithImu() {
             return Twc;
           };
 
+      auto Toc_optical = optimized_trajectory_optical.rbegin()->second;
+
       auto optimized_trajectory =
           optical_to_camera(optimized_trajectory_optical);
 
@@ -351,10 +353,11 @@ void StereoInertialNode::SyncWithImu() {
       landmark_desc_cv.encoding = sensor_msgs::image_encodings::TYPE_8UC1;
       landmark_desc_cv.toImageMsg(frame_msg.landmark_local_descriptors);
 
-      frame_msg.keypoints.resize(keypoints.size() * 2);
+      frame_msg.keypoints.resize(keypoints.size() * 3);
       for (size_t i = 0; i < keypoints.size(); i++) {
-        frame_msg.keypoints[i * 2] = keypoints[i].pt.x;
-        frame_msg.keypoints[i * 2 + 1] = keypoints[i].pt.y;
+        frame_msg.keypoints[i * 3] = keypoints[i].pt.x;
+        frame_msg.keypoints[i * 3 + 1] = keypoints[i].pt.y;
+        frame_msg.keypoints[i * 3 + 2] = keypoints[i].octave;
       }
 
       cv_bridge::CvImage desc_cv;
@@ -424,12 +427,20 @@ void StereoInertialNode::SyncWithImu() {
       odom_msg.pose.pose.orientation.z = Toc_current.unit_quaternion().z();
       odom_msg.pose.pose.orientation.w = Toc_current.unit_quaternion().w();
 
-      frame_msg.camera_pose = odom_msg.pose.pose;
+      frame_msg.camera_pose.position.x = Toc_optical.translation().x();
+      frame_msg.camera_pose.position.y = Toc_optical.translation().y();
+      frame_msg.camera_pose.position.z = Toc_optical.translation().z();
+      frame_msg.camera_pose.orientation.x = Toc_optical.unit_quaternion().x();
+      frame_msg.camera_pose.orientation.y = Toc_optical.unit_quaternion().y();
+      frame_msg.camera_pose.orientation.z = Toc_optical.unit_quaternion().z();
+      frame_msg.camera_pose.orientation.w = Toc_optical.unit_quaternion().w();
 
       frame_msg.camera_info = leftCameraInfo_;
       frame_msg.camera_info.header = frame_msg.header;
       frame_msg.camera_info.height = imLeft.rows;
       frame_msg.camera_info.width = imLeft.cols;
+
+      frame_msg.level_sigma2 = SLAM_->GetLevelSigma2();
 
       pubFrame_->publish(frame_msg);
 
