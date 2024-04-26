@@ -270,13 +270,18 @@ void StereoInertialNode::SyncWithImu() {
 
       sensor_msgs::PointCloud2Modifier modifier(frame_msg.landmarks);
       // clang-format off
-      modifier.setPointCloud2Fields(6, // no format
+      modifier.setPointCloud2Fields(11, // no format
                                 "x", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "y", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "z", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "id_low", 1, sensor_msgs::msg::PointField::UINT32,
                                 "id_high", 1, sensor_msgs::msg::PointField::UINT32,
-                                "keypoint_id", 1, sensor_msgs::msg::PointField::UINT32
+                                "keypoint_id", 1, sensor_msgs::msg::PointField::UINT32,
+                                "max_distance", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "min_distance", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "norm_x", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "norm_y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "norm_z", 1, sensor_msgs::msg::PointField::FLOAT32
                                );
       // clang-format on
 
@@ -299,6 +304,16 @@ void StereoInertialNode::SyncWithImu() {
                                                             "id_high");
       sensor_msgs::PointCloud2Iterator<uint32_t> keypoint_id_it(
           frame_msg.landmarks, "keypoint_id");
+      sensor_msgs::PointCloud2Iterator<float> max_distance_it(
+          frame_msg.landmarks, "max_distance");
+      sensor_msgs::PointCloud2Iterator<float> min_distance_it(
+          frame_msg.landmarks, "min_distance");
+      sensor_msgs::PointCloud2Iterator<float> norm_x_it(frame_msg.landmarks,
+                                                        "norm_x");
+      sensor_msgs::PointCloud2Iterator<float> norm_y_it(frame_msg.landmarks,
+                                                        "norm_y");
+      sensor_msgs::PointCloud2Iterator<float> norm_z_it(frame_msg.landmarks,
+                                                        "norm_z");
 
       std::set<long unsigned int> landmark_ids;
 
@@ -332,10 +347,16 @@ void StereoInertialNode::SyncWithImu() {
         *id_high_it = id_high;
         *keypoint_id_it = i;
 
-        local_descriptors.row(i).copyTo(
+        landmark->GetDescriptor().row(i).copyTo(
             landmark_descriptors.row(nGoodLandmarks));
 
         nGoodLandmarks++;
+
+        *max_distance_it = landmark->mfMaxDistance;
+        *min_distance_it = landmark->mfMinDistance;
+        *norm_x_it = landmark->GetNormal().x();
+        *norm_y_it = landmark->GetNormal().y();
+        *norm_z_it = landmark->GetNormal().z();
 
         ++x_it;
         ++y_it;
@@ -343,6 +364,11 @@ void StereoInertialNode::SyncWithImu() {
         ++id_low_it;
         ++id_high_it;
         ++keypoint_id_it;
+        ++max_distance_it;
+        ++min_distance_it;
+        ++norm_x_it;
+        ++norm_y_it;
+        ++norm_z_it;
       }
 
       modifier.resize(nGoodLandmarks);
@@ -377,6 +403,10 @@ void StereoInertialNode::SyncWithImu() {
         feature_ids_msg.data = feature_ids;
         frame_msg.local_feature_vector.feature_ids.push_back(feature_ids_msg);
       }
+
+      frame_msg.log_scale_factor = SLAM_->GetFrame()->mfLogScaleFactor;
+      frame_msg.scale_levels = SLAM_->GetFrame()->mnScaleLevels;
+      frame_msg.scale_factors = SLAM_->GetFrame()->mvScaleFactors;
 
       pubLandmarks_->publish(frame_msg.landmarks);
       pubDesc_->publish(frame_msg.local_descriptors);
