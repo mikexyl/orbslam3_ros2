@@ -270,7 +270,7 @@ void StereoInertialNode::SyncWithImu() {
 
       sensor_msgs::PointCloud2Modifier modifier(frame_msg.landmarks);
       // clang-format off
-      modifier.setPointCloud2Fields(11, // no format
+      modifier.setPointCloud2Fields(12, // no format
                                 "x", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "y", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "z", 1, sensor_msgs::msg::PointField::FLOAT32,
@@ -281,7 +281,8 @@ void StereoInertialNode::SyncWithImu() {
                                 "min_distance", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "norm_x", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "norm_y", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "norm_z", 1, sensor_msgs::msg::PointField::FLOAT32
+                                "norm_z", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "track_scale_level", 1, sensor_msgs::msg::PointField::INT32
                                );
       // clang-format on
 
@@ -314,6 +315,8 @@ void StereoInertialNode::SyncWithImu() {
                                                         "norm_y");
       sensor_msgs::PointCloud2Iterator<float> norm_z_it(frame_msg.landmarks,
                                                         "norm_z");
+      sensor_msgs::PointCloud2Iterator<int32_t> track_scale_level_it(
+          frame_msg.landmarks, "track_scale_level");
 
       std::set<long unsigned int> landmark_ids;
 
@@ -347,7 +350,8 @@ void StereoInertialNode::SyncWithImu() {
         *id_high_it = id_high;
         *keypoint_id_it = i;
 
-        landmark->GetDescriptor().row(i).copyTo(
+        assert(landmark->GetDescriptor().rows == 1);
+        landmark->GetDescriptor().copyTo(
             landmark_descriptors.row(nGoodLandmarks));
 
         nGoodLandmarks++;
@@ -357,6 +361,8 @@ void StereoInertialNode::SyncWithImu() {
         *norm_x_it = landmark->GetNormal().x();
         *norm_y_it = landmark->GetNormal().y();
         *norm_z_it = landmark->GetNormal().z();
+
+        *track_scale_level_it = landmark->mnTrackScaleLevel;
 
         ++x_it;
         ++y_it;
@@ -369,6 +375,7 @@ void StereoInertialNode::SyncWithImu() {
         ++norm_x_it;
         ++norm_y_it;
         ++norm_z_it;
+        ++track_scale_level_it;
       }
 
       modifier.resize(nGoodLandmarks);
