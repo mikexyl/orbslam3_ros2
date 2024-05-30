@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
   bool visualization = true;
   std::stringstream ss_vis(argv[3]);
   ss_vis >> std::boolalpha >> visualization;
+  std::cout<<"Visualization: "<<visualization<<std::endl;
   ORB_SLAM3::System pSLAM(argv[1], argv[2], ORB_SLAM3::System::IMU_STEREO,
                           visualization);
 

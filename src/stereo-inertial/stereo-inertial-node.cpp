@@ -253,7 +253,15 @@ void StereoInertialNode::SyncWithImu() {
       frame_msg.header.stamp = tImLeftRos;
       frame_msg.header.frame_id = sImLeftFrame;
 
-      auto bow_vec = SLAM_->GetCurrentFrameBowVec();
+      auto current_frame = SLAM_->GetFrame();
+      auto current_keyframe = current_frame->mpLastKeyFrame;
+      if(!current_keyframe)
+        continue;
+      auto parent_keyframe = current_keyframe->GetParent();
+      if (!parent_keyframe)
+        continue;
+
+      auto bow_vec = parent_keyframe->mBowVec;
       for (auto [word_id, word_weight] : bow_vec) {
         frame_msg.global_descriptor.ids.push_back(word_id);
         frame_msg.global_descriptor.values.push_back(word_weight);
@@ -264,13 +272,14 @@ void StereoInertialNode::SyncWithImu() {
       cv_image.encoding = sensor_msgs::image_encodings::MONO8;
       cv_image.toImageMsg(frame_msg.left_image);
 
-      frame_msg.landmarks.header.stamp = tImLeftRos;
+      frame_msg.landmarks.header.stamp =
+          Utility::SecToStamp(parent_keyframe->mTimeStamp);
       frame_msg.landmarks.header.frame_id = "odom";
       frame_msg.landmarks.height = 1;
 
       sensor_msgs::PointCloud2Modifier modifier(frame_msg.landmarks);
       // clang-format off
-      modifier.setPointCloud2Fields(12, // no format
+      modifier.setPointCloud2Fields(13, // no format
                                 "x", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "y", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "z", 1, sensor_msgs::msg::PointField::FLOAT32,
@@ -282,14 +291,15 @@ void StereoInertialNode::SyncWithImu() {
                                 "norm_x", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "norm_y", 1, sensor_msgs::msg::PointField::FLOAT32,
                                 "norm_z", 1, sensor_msgs::msg::PointField::FLOAT32,
-                                "track_scale_level", 1, sensor_msgs::msg::PointField::INT32
+                                "track_scale_level", 1, sensor_msgs::msg::PointField::INT32,
+                                "bad", 1, sensor_msgs::msg::PointField::UINT8
                                );
       // clang-format on
 
       // publish features
-      auto const &landmarks = SLAM_->GetTrackedMapPoints();
-      auto const &keypoints = SLAM_->GetTrackedKeyPointsUn();
-      cv::Mat local_descriptors = SLAM_->GetDescriptors();
+      auto const &landmarks = parent_keyframe->GetMapPointMatches();
+      auto const &keypoints = parent_keyframe->mvKeysUn;
+      cv::Mat local_descriptors = parent_keyframe->mDescriptors;
       if (local_descriptors.empty()) {
         std::cout << "empty descriptors! skipping frame" << std::endl;
         continue;
@@ -317,6 +327,8 @@ void StereoInertialNode::SyncWithImu() {
                                                         "norm_z");
       sensor_msgs::PointCloud2Iterator<int32_t> track_scale_level_it(
           frame_msg.landmarks, "track_scale_level");
+      sensor_msgs::PointCloud2Iterator<uint8_t> bad_it(frame_msg.landmarks,
+                                                       "bad");
 
       std::set<long unsigned int> landmark_ids;
 
@@ -335,8 +347,7 @@ void StereoInertialNode::SyncWithImu() {
 
       for (uint32_t i = 0; i < landmarks.size(); i++) {
         auto const &landmark = landmarks[i];
-        if (landmark == nullptr or landmark->isBad() or
-            landmark_ids.count(landmark->mnId))
+        if (landmark == nullptr or landmark_ids.count(landmark->mnId))
           continue;
         landmark_ids.insert(landmark->mnId);
         auto T_o_landmark = Two.inverse() * landmark->GetWorldPos();
@@ -363,6 +374,7 @@ void StereoInertialNode::SyncWithImu() {
         *norm_z_it = landmark->GetNormal().z();
 
         *track_scale_level_it = landmark->mnTrackScaleLevel;
+        *bad_it = landmark->isBad() ? 1 : 0;
 
         ++x_it;
         ++y_it;
@@ -376,6 +388,7 @@ void StereoInertialNode::SyncWithImu() {
         ++norm_y_it;
         ++norm_z_it;
         ++track_scale_level_it;
+        ++bad_it;
       }
 
       modifier.resize(nGoodLandmarks);
@@ -403,17 +416,16 @@ void StereoInertialNode::SyncWithImu() {
       // save feature vector of current frame
       frame_msg.local_feature_vector.node_ids.clear();
       frame_msg.local_feature_vector.feature_ids.clear();
-      for (auto const &[node_id, feature_ids] :
-           SLAM_->GetCurrentFrameFeatVec()) {
+      for (auto const &[node_id, feature_ids] : parent_keyframe->mFeatVec) {
         frame_msg.local_feature_vector.node_ids.push_back(node_id);
         std_msgs::msg::UInt32MultiArray feature_ids_msg;
         feature_ids_msg.data = feature_ids;
         frame_msg.local_feature_vector.feature_ids.push_back(feature_ids_msg);
       }
 
-      frame_msg.log_scale_factor = SLAM_->GetFrame()->mfLogScaleFactor;
-      frame_msg.scale_levels = SLAM_->GetFrame()->mnScaleLevels;
-      frame_msg.scale_factors = SLAM_->GetFrame()->mvScaleFactors;
+      frame_msg.log_scale_factor = parent_keyframe->mfLogScaleFactor;
+      frame_msg.scale_levels = parent_keyframe->mnScaleLevels;
+      frame_msg.scale_factors = parent_keyframe->mvScaleFactors;
 
       pubLandmarks_->publish(frame_msg.landmarks);
       pubDesc_->publish(frame_msg.local_descriptors);
@@ -477,7 +489,7 @@ void StereoInertialNode::SyncWithImu() {
       frame_msg.camera_info.height = imLeft.rows;
       frame_msg.camera_info.width = imLeft.cols;
 
-      frame_msg.level_sigma2 = SLAM_->GetLevelSigma2();
+      frame_msg.level_sigma2 = parent_keyframe->mvLevelSigma2;
 
       pubFrame_->publish(frame_msg);
 
